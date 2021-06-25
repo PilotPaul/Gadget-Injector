@@ -1,0 +1,98 @@
+#                                               -*- Autoconf -*-
+# Process this file with autoconf to produce a configure script.
+
+AC_PREREQ([2.63])
+AC_INIT([Injector], [1.0], [ass163@qq.com])
+AC_CONFIG_AUX_DIR([.])
+AM_INIT_AUTOMAKE(foreign)
+
+# Test file exist or not to check validity
+AC_CONFIG_SRCDIR([src/main.c])
+# Generate config.h for autoheader
+AC_CONFIG_HEADERS([config.h])
+
+# Checks for programs.
+AC_PROG_CC
+
+# Customed flags
+# generate dynamic library or stati libraries
+AC_ARG_ENABLE(shared,
+			  [AC_HELP_STRING([--enable-sahred], [enable shared build])],
+			  [case "${enableval}" in
+			   yes) shared=true;;
+			   no) shared=false;;
+			   *) AC_MSG_ERROR(bad value ${enableval} for --enable-shared);;
+		   esac],
+		   [shared=true]
+		   )
+AM_CONDITIONAL([INJECTOR_SHARED], [test x$shared = xtrue])
+
+AC_ARG_ENABLE(debug,
+			  [AC_HELP_STRING([--enable-debug], [enable debug information])],
+			  [case "${enableval}" in
+			   yes) debug=true;;
+			   no) debug=false;;
+			   *) AC_MSG_ERROR(bad value ${enableval} for --enable-debug);;
+		   esac],
+		   [debug=true]
+		   )
+if test x$debug = xtrue; then
+	CFLAGS+=" -g -ggdb3"
+fi
+
+CFLAGS+=" -O0 -Wall -posix -fno-inline -fPIC -std=c99"
+INJ_OS_ARCH=$(/bin/uname -m)
+if test ${INJ_OS_ARCH} = "x86_64"; then
+	echo "injector: Compiling ${INJECT_OS_ARCH} 64-bit program"
+	CFLGAS+=" -m64"
+elif [ ${INJECT_OS_ARCH} = "x86_32" ]; then
+	CFLAGS+=" -m32"
+else
+	echo "injector error: unsupported OS architecture"
+    exit
+fi
+
+# Check necessary program
+if which nasm > /dev/null 2>&1; then
+	INJ_NASM=$(which nasm)
+	echo "injector: nasm found at ${INJ_NASM}, use nasm"
+elif which yasm > /dev/null 2>&1; then
+	INJ_YASM=$(which yasm)
+	echo "injector: yasm found at ${INJ_YASM}, use yasm"
+else
+	echo "injector error: yasm or nasm not found, please install it firstly"
+	exit
+fi
+
+# Checks for libraries.
+
+# Checks for header files.
+AC_CHECK_HEADERS([fcntl.h stdlib.h string.h unistd.h])
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_TYPE_PID_T
+AC_TYPE_SIZE_T
+AC_TYPE_SSIZE_T
+
+# Checks for library functions.
+AC_FUNC_MALLOC
+AC_CHECK_FUNCS([getcwd memset strchr strdup strerror strstr strtoul])
+
+if test x$shared = xtrue; then
+# generate dynamic library in advance if any
+AC_CONFIG_SUBDIRS([lib])
+else
+# generate static library
+AC_PROG_RANLIB
+fi
+
+# Generate Makefile
+AC_CONFIG_FILES([Makefile
+				 base/Makefile
+				 parse/Makefile
+				 ptrace/Makefile
+				 load/Makefile
+				 src/Makefile
+				])
+#AC_PREFIX_DEFAULT(/usr/local)
+AC_OUTPUT

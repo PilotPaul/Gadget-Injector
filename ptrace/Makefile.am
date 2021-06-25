@@ -1,0 +1,2 @@
+noinst_LIBRARIES=libptrace.a
+libptrace_a_SOURCES=inner_interface_ptrace.c
